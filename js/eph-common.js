@@ -413,6 +413,29 @@ Cluster = new L.markerClusterGroup({
 
 Cluster.on('clusterclick', function (a) {
   let cluster = a.layer;
+
+  // ==========================================
+  // INJEKSI GAME MODE UNTUK CLUSTER
+  // ==========================================
+  if (typeof isGameMode !== 'undefined' && isGameMode === true) {
+      // Ambil semua marker di dalam cluster yang diklik ini
+      let childMarkers = cluster.getAllChildMarkers();
+      
+      // Cek apakah marker jawaban (targetGameData.mapMarker) ada di dalam kumpulan marker ini
+      let isBenar = childMarkers.includes(targetGameData.mapMarker);
+      
+      // Jika salah, beri tahu bahwa dia salah mengklik 'Gerombolan Lokasi'
+      let titleDiklik = isBenar ? targetGameData.title : "Gerombolan Titik di Wilayah Ini";
+      
+      // Eksekusi jawaban (akan otomatis menunggu 5 detik)
+      evaluasiJawabanGame(isBenar, titleDiklik);
+      
+      return; // HENTIKAN PROSES NORMAL (Cluster tidak akan Zoom atau Spiderfy saat mode game)
+  }
+  // ==========================================
+
+
+  // --- KODE BAWAAN CLUSTER ANDA DI BAWAH INI ---
   let count = cluster.getChildCount();
   let currentZoom = Map.getZoom();
   let maxZoom = TILE_LAYER_MAX_ZOOM;
@@ -422,19 +445,15 @@ Cluster.on('clusterclick', function (a) {
 
   if (currentZoom >= maxZoom || isSamePoint) {
     if (count > 60) {
-      // TIDAK PERLU cluster.unspiderfy() lagi karena dia otomatis diam.
-      // Langsung munculkan dialog saja
       tampilkanDialog(
         `Terlalu banyak data di titik ini (<b>${count} item</b>).<br><br>Untuk melihatnya, silakan buka daftar indeks dan persempit pencarian wilayah.`, 
         "alert", 
         "Titik Terlalu Padat"
       );
     } else {
-      // WAJIB ADA: Agar titik <= 60 tetap bisa mekar saat diklik
       cluster.spiderfy();
     }
   } else {
-    // WAJIB ADA: Agar saat diklik dari jauh, kamera peta nge-zoom
     Map.fitBounds(cluster.getBounds());
   }
 });
@@ -1293,3 +1312,133 @@ window.addEventListener('pageshow', function(e) {
   if (typeof aturTampilanWilayah === 'function') aturTampilanWilayah();
 });
 
+// Global State untuk Game
+let isGameMode = false;
+let targetGameQID = null;
+let targetGameData = null;
+
+// Referensi DOM
+const btnMulaiGame = document.getElementById('btn-mulai-game');
+const navBeranda = document.getElementById('nav-beranda');
+const navHasil = document.getElementById('nav-hasil-container');
+const navLainnya = document.getElementById('nav-lainnya-container');
+const gameDialog = document.getElementById('game-dialog');
+const gameTargetName = document.getElementById('game-target-name');
+const gameMessage = document.getElementById('game-message');
+const gameOverlay = document.getElementById('game-overlay');
+
+// 1. Fungsi Memulai Game
+btnMulaiGame.addEventListener('click', function(e) {
+    e.preventDefault();
+    
+    // Asumsi: 'currentFilteredRecords' atau 'Records' berisi objek data aktif saat ini
+    const activeKeys = Object.keys(Records); 
+    
+    if (activeKeys.length < 3) {
+        alert("Pilih atau filter minimal 3 lokasi di peta terlebih dahulu untuk bermain!");
+        return;
+    }
+
+    // Acak target dari data yang ada di memori
+    const randomIndex = Math.floor(Math.random() * activeKeys.length);
+    targetGameQID = activeKeys[randomIndex];
+    targetGameData = Records[targetGameQID];
+
+    // Aktifkan State Game
+    isGameMode = true;
+
+    // Manipulasi Navigasi: Redupkan Hasil & Lainnya
+    navHasil.classList.add('nav-disabled');
+    navLainnya.classList.add('nav-disabled');
+    navBeranda.textContent = "Batal Game"; // Ubah teks beranda jadi tombol batal
+    navBeranda.classList.add('text-danger'); 
+
+    // Sembunyikan Submenu Induk
+    document.getElementById('submenu-atas').classList.add('d-none');
+
+    // Tutup panel handel jika di mobile (Sesuaikan dengan fungsi collapse panel Anda)
+    // tutupPanelIndex(); 
+
+    // Munculkan Dialog
+    gameTargetName.textContent = targetGameData.title; // Ambil dari property title di Records
+    gameMessage.innerHTML = `Temukan marker: <br><strong style="font-size:20px; color:#d9534f;">${targetGameData.title}</strong>`;
+    gameDialog.classList.remove('d-none');
+});
+
+// 2. Fungsi Pembatalan/Keluar Game via Beranda
+navBeranda.addEventListener('click', function(e) {
+    if (isGameMode) {
+        e.preventDefault(); // Cegah fungsi beranda normal sementara
+        akhiriGameMode();
+    }
+});
+
+// 3. Fungsi Mengakhiri / Mereset Game
+function akhiriGameMode() {
+    isGameMode = false;
+    targetGameQID = null;
+    targetGameData = null;
+
+    // Kembalikan Navigasi
+    navHasil.classList.remove('nav-disabled');
+    navLainnya.classList.remove('nav-disabled');
+    navBeranda.textContent = "Beranda";
+    navBeranda.classList.remove('text-danger');
+
+    // Bersihkan UI Game
+    gameDialog.classList.add('d-none');
+    gameOverlay.classList.remove('lock-screen');
+    gameOverlay.classList.add('d-none');
+    
+    // Kembalikan teks dialog ke default untuk game berikutnya
+    document.getElementById('game-title').textContent = "Tantangan Game!";
+}
+
+// Fungsi Sentral untuk Menilai Jawaban Game
+function evaluasiJawabanGame(isBenar, titleDiklik) {
+    const gameOverlay = document.getElementById('game-overlay');
+    const gameDialog = document.getElementById('game-dialog');
+    const gameMessage = document.getElementById('game-message');
+    
+    // Kunci layar
+    gameOverlay.classList.remove('d-none');
+    gameOverlay.classList.add('lock-screen');
+
+    if (isBenar) {
+        // --- JAWABAN BENAR ---
+        document.getElementById('game-title').textContent = "Tepat Sekali! 🎉";
+        gameMessage.innerHTML = `Anda berhasil menemukan <strong>${targetGameData.title}</strong>!`;
+        gameDialog.style.border = "3px solid green";
+        
+        setTimeout(() => {
+            akhiriGameMode();
+            gameDialog.style.border = "none";
+            
+            // Buka popup dan panel detail target
+            if (targetGameData.mapMarker) {
+                targetGameData.mapMarker.openPopup();
+            }
+            if (typeof window.setMobilePanelExpanded === 'function') {
+                window.setMobilePanelExpanded(true, true);
+            }
+        }, 5000);
+
+    } else {
+        // --- JAWABAN SALAH ---
+        document.getElementById('game-title').textContent = "Sayang Sekali ❌";
+        gameMessage.innerHTML = `Anda memilih <strong>${titleDiklik}</strong>.<br>Mengarahkan ke lokasi yang benar...`;
+        gameDialog.style.border = "3px solid red";
+
+        setTimeout(() => {
+            akhiriGameMode();
+            gameDialog.style.border = "none";
+            
+            // Terbang ke jawaban sebenarnya (Perhatikan: menggunakan variabel 'Map' dari kode Anda)
+            Map.flyTo([targetGameData.lat, targetGameData.lon], 16, { duration: 2 }); 
+            
+            if (targetGameData.mapMarker) {
+                targetGameData.mapMarker.openPopup();
+            }
+        }, 5000);
+    }
+}

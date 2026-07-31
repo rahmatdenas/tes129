@@ -1426,17 +1426,36 @@ navBeranda.addEventListener('click', function(e) {
 // ------------------------------------------
 // 3. TOMBOL LEWATI (Lainnya) DIKLIK
 // ------------------------------------------
-btnMenuInduk.addEventListener('click', function(e) {
-    // Jika sedang main game, jadikan tombol ini sebagai "Skip"
-    if (typeof isGameMode !== 'undefined' && isGameMode === true) {
-        e.preventDefault();
-        e.stopPropagation();
+if (btnMenuInduk) {
+    btnMenuInduk.addEventListener('click', function(e) {
         
-        // Buat soal baru
-        buatSoalBaru();
-    }
-    // Jika tidak main game, biarkan fungsi "Lainnya" bawaan berjalan normal
-});
+        // --- JIKA SEDANG MAIN GAME (Fungsi Skip) ---
+        if (typeof isGameMode !== 'undefined' && isGameMode === true) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            
+            Swal.fire({
+                title: 'Soal Dilewati!',
+                text: 'Mencari lokasi baru...',
+                icon: 'info',
+                timer: 1200, 
+                showConfirmButton: false,
+                backdrop: false 
+            }).then(() => {
+                buatSoalBaru();
+            });
+            
+            return; // Hentikan agar tidak lanjut ke bawah
+        }
+        
+        // --- JIKA GAME MATI (Fungsi Normal: Buka/Tutup Dropdown) ---
+        // Biarkan sistem bawaan atau toggle manual dropdown-nya di sini
+        if (submenuAtas) {
+            submenuAtas.classList.toggle('d-none');
+        }
+    });
+}
 
 
 // ------------------------------------------

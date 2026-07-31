@@ -1575,10 +1575,6 @@ function buatSoalBaru() {
     return true; 
 }
 
-// ==========================================
-// 3. EVENT LISTENER SKIP (Membajak tombol "Lainnya")
-// ==========================================
-const btnMenuInduk = document.getElementById('btn-menu-induk'); // Ini adalah ID tombol "Lainnya" di HTML Anda
 
 btnMenuInduk.addEventListener('click', function(e) {
     // Cek apakah game sedang aktif

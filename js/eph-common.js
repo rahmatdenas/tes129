@@ -161,32 +161,29 @@ function init() {
   window.addEventListener('hashchange', processHashChange);
 
 document.addEventListener('click', function(e) {
-    // 1. Pastikan game mode sedang aktif
-    if (typeof isGameMode !== 'undefined' && isGameMode === true) {
-        
-        // 2. Deteksi apakah yang diklik adalah tombol 'btn-menu-induk' atau teks di dalamnya
-        const klikTombolLainnya = e.target.id === 'btn-menu-induk' || e.target.closest('#btn-menu-induk');
-        
-        if (klikTombolLainnya) {
-            // 3. BLOKIR SEMUA FUNGSI BAWAAN! (Mencegah navigasi / dropdown terbuka)
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            
-            // 4. Jalankan aksi Skip
-            Swal.fire({
-                title: 'Soal Dilewati!',
-                text: 'Mencari lokasi baru...',
-                icon: 'info',
-                timer: 1200, 
-                showConfirmButton: false,
-                backdrop: false 
-            }).then(() => {
-                buatSoalBaru();
-            });
-        }
+    let btnMenu = document.getElementById('btn-menu-induk');
+    let subMenu = document.getElementById('submenu-atas');
+    
+    if (!btnMenu || !subMenu) return;
+
+    if (e.target === btnMenu) {
+      if (subMenu.classList.contains('d-none')) {
+        subMenu.classList.remove('d-none');
+        btnMenu.parentElement.classList.add('selected'); 
+      } else {
+        subMenu.classList.add('d-none');
+        btnMenu.parentElement.classList.remove('selected'); 
+      }
+    } 
+    else if (!subMenu.contains(e.target)) {
+      subMenu.classList.add('d-none');
+      btnMenu.parentElement.classList.remove('selected');
+    } 
+    else if (e.target.tagName === 'A') {
+      subMenu.classList.add('d-none');
+      btnMenu.parentElement.classList.remove('selected');
     }
-}, true);
+  });
   
   Map.on('popupopen', function(e) { 
     e.popup._sudahDiupdate = false;

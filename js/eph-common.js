@@ -414,47 +414,58 @@ Cluster = new L.markerClusterGroup({
 Cluster.on('clusterclick', function (a) {
   let cluster = a.layer;
 
+  // 1. Hitung status kluster terlebih dahulu agar bisa dipakai oleh Game Mode dan Normal
+  let count = cluster.getChildCount();
+  let currentZoom = Map.getZoom();
+  let maxZoom = typeof TILE_LAYER_MAX_ZOOM !== 'undefined' ? TILE_LAYER_MAX_ZOOM : 18; 
+  
+  let bounds = cluster.getBounds();
+  let isSamePoint = bounds.getSouthWest().equals(bounds.getNorthEast());
+  
+  // Penentu apakah kluster ini sudah mentok (menumpuk)
+  let isMenumpuk = (currentZoom >= maxZoom || isSamePoint);
+
   // ==========================================
   // INJEKSI GAME MODE UNTUK CLUSTER
   // ==========================================
   if (typeof isGameMode !== 'undefined' && isGameMode === true) {
-      // Ambil semua marker di dalam cluster yang diklik ini
-      let childMarkers = cluster.getAllChildMarkers();
+      if (isMenumpuk) {
+          // KONDISI A: Kluster Mentok/Menumpuk (seperti yang 60+ titik itu)
+          // Langsung periksa apakah jawaban ada di tumpukan ini
+          let childMarkers = cluster.getAllChildMarkers();
+          let isBenar = childMarkers.includes(targetGameData.mapMarker);
+          
+          let titleDiklik = isBenar ? targetGameData.title : "Tumpukan Titik di Lokasi Ini";
+          
+          evaluasiJawabanGame(isBenar, titleDiklik);
+          
+      } else {
+          // KONDISI B: Kluster Masih Bisa Diurai
+          // Peta akan melakukan zoom-in memecah kluster seperti biasa
+          Map.fitBounds(bounds);
+      }
       
-      // Cek apakah marker jawaban (targetGameData.mapMarker) ada di dalam kumpulan marker ini
-      let isBenar = childMarkers.includes(targetGameData.mapMarker);
-      
-      // Jika salah, beri tahu bahwa dia salah mengklik 'Gerombolan Lokasi'
-      let titleDiklik = isBenar ? targetGameData.title : "Gerombolan Titik di Wilayah Ini";
-      
-      // Eksekusi jawaban (akan otomatis menunggu 5 detik)
-      evaluasiJawabanGame(isBenar, titleDiklik);
-      
-      return; // HENTIKAN PROSES NORMAL (Cluster tidak akan Zoom atau Spiderfy saat mode game)
+      return; // Hentikan script di sini agar tidak menjalankan fungsi spiderfy/dialog di bawah
   }
   // ==========================================
 
 
-  // --- KODE BAWAAN CLUSTER ANDA DI BAWAH INI ---
-  let count = cluster.getChildCount();
-  let currentZoom = Map.getZoom();
-  let maxZoom = TILE_LAYER_MAX_ZOOM;
-  
-  let bounds = cluster.getBounds();
-  let isSamePoint = bounds.getSouthWest().equals(bounds.getNorthEast());
-
-  if (currentZoom >= maxZoom || isSamePoint) {
+  // --- KODE BAWAAN CLUSTER ANDA DI BAWAH INI (NORMAL MODE) ---
+  if (isMenumpuk) {
     if (count > 60) {
+      // Mencegah crash jika terlalu banyak titik di satu tempat
       tampilkanDialog(
         `Terlalu banyak data di titik ini (<b>${count} item</b>).<br><br>Untuk melihatnya, silakan buka daftar indeks dan persempit pencarian wilayah.`, 
         "alert", 
         "Titik Terlalu Padat"
       );
     } else {
+      // Spiderfy (jaring laba-laba) untuk titik menumpuk < 60
       cluster.spiderfy();
     }
   } else {
-    Map.fitBounds(cluster.getBounds());
+    // Zoom in seperti biasa
+    Map.fitBounds(bounds);
   }
 });
 }
@@ -1344,6 +1355,10 @@ btnMulaiGame.addEventListener('click', function(e) {
     const randomIndex = Math.floor(Math.random() * activeKeys.length);
     targetGameQID = activeKeys[randomIndex];
     targetGameData = Records[targetGameQID];
+	targetGameKoordinatAsli = null;
+if (targetGameData.lat && targetGameData.lon) {
+    targetGameKoordinatAsli = [targetGameData.lat, targetGameData.lon];
+}
 
     // Aktifkan State Game
     isGameMode = true;
@@ -1435,12 +1450,15 @@ function evaluasiJawabanGame(isBenar, titleDiklik) {
         gameDialog.style.border = "3px solid green";
         
         setTimeout(() => {
+            // Amankan marker sebelum status game di-reset
+            let marker = targetGameData.mapMarker; 
+            
             akhiriGameMode();
             gameDialog.style.border = "none";
             
             // Buka popup dan panel detail target
-            if (targetGameData.mapMarker) {
-                targetGameData.mapMarker.openPopup();
+            if (marker) {
+                marker.openPopup();
             }
             if (typeof window.setMobilePanelExpanded === 'function') {
                 window.setMobilePanelExpanded(true, true);
@@ -1454,17 +1472,35 @@ function evaluasiJawabanGame(isBenar, titleDiklik) {
         gameDialog.style.border = "3px solid red";
 
         setTimeout(() => {
+            // 1. AMANKAN DATA DULU sebelum memanggil akhiriGameMode()
+            let markerTarget = targetGameData.mapMarker;
+            let koordinatAsli = null;
+            if (markerTarget) {
+                koordinatAsli = markerTarget.getLatLng();
+            }
+            
+            // 2. Sekarang aman untuk mengakhiri mode game
             akhiriGameMode();
             gameDialog.style.border = "none";
             
-            // Terbang ke jawaban sebenarnya (Perhatikan: menggunakan variabel 'Map' dari kode Anda)
-if (targetGameData.mapMarker) {
-    let koordinatAsli = targetGameData.mapMarker.getLatLng();
-    Map.flyTo(koordinatAsli, 16, { duration: 2 });
-}
-            
-            if (targetGameData.mapMarker) {
-                targetGameData.mapMarker.openPopup();
+            // 3. Terbang ke jawaban sebenarnya menggunakan Map
+            if (koordinatAsli) {
+                // Terbang selama 2.5 detik ke level zoom 17
+                Map.flyTo(koordinatAsli, 17, { duration: 2.5 });
+                
+                // 4. Tunggu animasi terbang selesai, BARU buka popup-nya
+                setTimeout(() => {
+                    if (markerTarget) {
+                        // Jika menggunakan MarkerCluster, ini memastikan marker terlihat
+                        if (typeof Cluster !== 'undefined' && Cluster.hasLayer(markerTarget)) {
+                            Cluster.zoomToShowLayer(markerTarget, function() {
+                                markerTarget.openPopup();
+                            });
+                        } else {
+                            markerTarget.openPopup();
+                        }
+                    }
+                }, 2600); // Tunggu 2.6 detik (sedikit lebih lama dari durasi flyTo)
             }
         }, 5000);
     }

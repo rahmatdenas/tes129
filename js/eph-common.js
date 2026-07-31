@@ -1347,6 +1347,20 @@ btnMulaiGame.addEventListener('click', function(e) {
     // Aktifkan State Game
     isGameMode = true;
 
+	// --- TAMBAHKAN KODE INI UNTUK PANEL MOBILE ---
+    // 1. Tutup panel secara otomatis
+    if (typeof window.setMobilePanelExpanded === 'function') {
+        window.setMobilePanelExpanded(false, false); // (false) berarti menutup panel
+    }
+
+    // 2. Kunci panel agar tidak bisa ditarik/drag
+    // GANTI 'id-panel-mobile' dengan ID elemen panel bawah atau handel Anda (misalnya: 'panel-container' atau 'drag-handle')
+    const panelMobile = document.getElementById('id-panel-mobile'); 
+    if (panelMobile) {
+        panelMobile.style.pointerEvents = 'none'; // Mematikan fungsi drag/sentuh
+        panelMobile.style.opacity = '0.5'; // Opsional: Agak diredupkan agar user tahu panel sedang tidak aktif
+    }
+
     // Manipulasi Navigasi: Redupkan Hasil & Lainnya
     navHasil.classList.add('nav-disabled');
     navLainnya.classList.add('nav-disabled');
@@ -1384,6 +1398,15 @@ function akhiriGameMode() {
     navLainnya.classList.remove('nav-disabled');
     navBeranda.textContent = "Beranda";
     navBeranda.classList.remove('text-danger');
+
+	// --- TAMBAHKAN KODE INI ---
+    // Buka kunci panel mobile
+    const panelMobile = document.getElementById('id-panel-mobile'); 
+    if (panelMobile) {
+        panelMobile.style.pointerEvents = 'auto'; // Mengembalikan fungsi drag/sentuh
+        panelMobile.style.opacity = '1'; // Kembalikan ke tampilan normal
+    }
+    // --------------------------
 
     // Bersihkan UI Game
     gameDialog.classList.add('d-none');
@@ -1434,7 +1457,10 @@ function evaluasiJawabanGame(isBenar, titleDiklik) {
             gameDialog.style.border = "none";
             
             // Terbang ke jawaban sebenarnya (Perhatikan: menggunakan variabel 'Map' dari kode Anda)
-            Map.flyTo([targetGameData.lat, targetGameData.lon], 16, { duration: 2 }); 
+if (targetGameData.mapMarker) {
+    let koordinatAsli = targetGameData.mapMarker.getLatLng();
+    Map.flyTo(koordinatAsli, 16, { duration: 2 });
+}
             
             if (targetGameData.mapMarker) {
                 targetGameData.mapMarker.openPopup();

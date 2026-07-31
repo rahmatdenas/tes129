@@ -1448,27 +1448,42 @@ function akhiriGameMode() {
     targetGameData = null;
     targetGameKoordinatAsli = null;
 
-    // Kembalikan Navigasi
+    // 1. Kembalikan Navigasi Hasil
     navHasil.classList.remove('nav-disabled');
     
+    // 2. Kembalikan Teks Beranda
     navBeranda.textContent = "Beranda";
     navBeranda.classList.remove('text-danger');
     
-    // Kembalikan Teks "Lainnya"
+    // 3. Kembalikan Teks "Lainnya"
     btnMenuInduk.textContent = "Lainnya";
     btnMenuInduk.classList.remove('text-primary');
 
-    // Buka kembali kunci Panel Mobile
+    // 4. BUKA KEMBALI MENU SUBMENU YANG DISEMBUNYIKAN <--- INI KUNCI ERRORNYA
+    const submenuAtas = document.getElementById('submenu-atas');
+    if (submenuAtas) {
+        submenuAtas.classList.remove('d-none');
+    }
+
+    // 5. Buka kembali kunci Panel Mobile
     const panelMobile = document.getElementById('panel'); 
     if (panelMobile) {
         panelMobile.style.pointerEvents = 'auto'; 
         panelMobile.style.opacity = '1'; 
     }
 
-    // Bersihkan UI Game
-    gameDialog.classList.add('d-none');
-    gameOverlay.classList.remove('lock-screen');
-    gameOverlay.classList.add('d-none');
+    // 6. Bersihkan UI Game
+    const gameDialog = document.getElementById('game-dialog');
+    const gameOverlay = document.getElementById('game-overlay');
+    
+    if (gameDialog) {
+        gameDialog.classList.add('d-none');
+        gameDialog.style.border = "none"; 
+    }
+    if (gameOverlay) {
+        gameOverlay.classList.remove('lock-screen');
+        gameOverlay.classList.add('d-none');
+    }
     
     document.getElementById('game-title').textContent = "Tantangan Game!";
 }

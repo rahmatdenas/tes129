@@ -115,6 +115,8 @@ function updateLabel(expanded) {
   }
 
   function onTouchStart(e) {
+if (typeof isGameMode !== 'undefined' && isGameMode) return; 
+
     if (!isMobile()) return;
     
     var touch = e.touches ? e.touches[0] : e;
@@ -141,6 +143,7 @@ function updateLabel(expanded) {
   }
 
   function onTouchMove(e) {
+    if (typeof isGameMode !== 'undefined' && isGameMode) return;
     if (!dragging) return;
     
     var touch = e.touches ? e.touches[0] : e;
@@ -163,6 +166,7 @@ function updateLabel(expanded) {
   }
 
   function onTouchEnd() {
+    if (typeof isGameMode !== 'undefined' && isGameMode) return;
     if (!dragging) return;
     dragging = false;
 

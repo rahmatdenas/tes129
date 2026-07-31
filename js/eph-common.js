@@ -1330,6 +1330,7 @@ const gameOverlay = document.getElementById('game-overlay');
 // 1. Fungsi Memulai Game
 btnMulaiGame.addEventListener('click', function(e) {
     e.preventDefault();
+	e.stopPropagation();
     
     // Asumsi: 'currentFilteredRecords' atau 'Records' berisi objek data aktif saat ini
     const activeKeys = Object.keys(Records); 

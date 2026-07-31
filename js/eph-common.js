@@ -1558,17 +1558,7 @@ btnMenuInduk.addEventListener('click', function(e) {
         e.stopPropagation(); // Mencegah bocor ke panel/peta
         
         // Munculkan efek SweetAlert pilihan Anda
-        Swal.fire({
-            title: 'Soal Dilewati!',
-            text: 'Mencari lokasi baru...',
-            icon: 'info',
-            timer: 1200, // Notifikasi kilat
-            showConfirmButton: false,
-            backdrop: false // Agar layar tidak gelap sepenuhnya
-        }).then(() => {
-            // Panggil fungsi acak soal setelah notifikasi selesai
-            buatSoalBaru();
-        });
+buatSoalBaru();
     }
     // Jika isGameMode false, kode ini tidak melakukan apa-apa 
     // sehingga tombol "Lainnya" berjalan normal seperti biasa.

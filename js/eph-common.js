@@ -1367,7 +1367,10 @@ function buatSoalBaru() {
     gameTargetName.textContent = targetGameData.title;
     gameMessage.innerHTML = `Temukan marker: <br><strong style="font-size:20px; color:#d9534f;">${targetGameData.title}</strong>`;
     gameDialog.classList.remove('d-none');
-    
+const menuDropdown = document.getElementById('submenu-atas');
+    if (menuDropdown) {
+        menuDropdown.classList.add('d-none');
+    }
     return true; // Berhasil buat soal
 }
 

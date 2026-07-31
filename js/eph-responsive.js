@@ -266,17 +266,19 @@ window.addEventListener('click', function(e) {
       }
     });
 
-    let logoIkon = document.getElementById('branding-icon');
+let logoIkon = document.getElementById('branding-icon');
     if (logoIkon) {
       logoIkon.addEventListener('click', function(e) {
+        // [TAMBAHAN UNTUK GAME MODE]: Cegah logo diklik saat main game
+        if (typeof isGameMode !== 'undefined' && isGameMode === true) {
+            e.preventDefault();
+            return; // Hentikan proses pembukaan panel
+        }
+
         // Hanya jalankan fungsi ini di tampilan HP
         if (isMobile() && window.setMobilePanelExpanded) {
           e.preventDefault(); // Mencegah perilaku default gambar
-          
-          // Cek posisi panel saat ini (sama seperti logika navigasi)
           let isCurrentlyExpanded = currentY < 50;
-          
-          // Balikkan posisinya (Jika buka jadi tutup, jika tutup jadi buka)
           window.setMobilePanelExpanded(!isCurrentlyExpanded);
         }
       });

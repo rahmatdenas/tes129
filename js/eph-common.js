@@ -1473,7 +1473,9 @@ function akhiriGameMode() {
     document.getElementById('game-title').textContent = "Tantangan Game!";
 }
 
-// Fungsi Sentral untuk Menilai Jawaban Game
+// ==========================================
+// 1. FUNGSI SENTRAL MENILAI JAWABAN (Sudah Betul!)
+// ==========================================
 function evaluasiJawabanGame(isBenar, titleDiklik) {
     const gameOverlay = document.getElementById('game-overlay');
     const gameDialog = document.getElementById('game-dialog');
@@ -1525,13 +1527,11 @@ function evaluasiJawabanGame(isBenar, titleDiklik) {
             
             // 3. Terbang ke jawaban sebenarnya menggunakan Map
             if (koordinatAsli) {
-                // Terbang selama 2.5 detik ke level zoom 17
                 Map.flyTo(koordinatAsli, 17, { duration: 2.5 });
                 
                 // 4. Tunggu animasi terbang selesai, BARU buka popup-nya
                 setTimeout(() => {
                     if (markerTarget) {
-                        // Jika menggunakan MarkerCluster, ini memastikan marker terlihat
                         if (typeof Cluster !== 'undefined' && Cluster.hasLayer(markerTarget)) {
                             Cluster.zoomToShowLayer(markerTarget, function() {
                                 markerTarget.openPopup();
@@ -1540,32 +1540,53 @@ function evaluasiJawabanGame(isBenar, titleDiklik) {
                             markerTarget.openPopup();
                         }
                     }
-                }, 2600); // Tunggu 2.6 detik (sedikit lebih lama dari durasi flyTo)
+                }, 2600); 
             }
         }, 5000);
     }
 }
 
-// Fungsi khusus untuk melempar soal baru
+// ==========================================
+// 2. FUNGSI BUAT SOAL BARU (Versi Disempurnakan)
+// ==========================================
 function buatSoalBaru() {
-    // 1. Ambil daftar semua Q-ID dari Records
-    let semuaQID = Object.keys(Records);
-    
-    // 2. Acak Q-ID baru (pastikan logic ini sesuai dengan kode Anda sebelumnya)
-    targetGameQID = semuaQID[Math.floor(Math.random() * semuaQID.length)];
+    const activeKeys = Object.keys(Records); 
+    if (activeKeys.length < 3) {
+        alert("Pilih atau filter minimal 3 lokasi di peta terlebih dahulu untuk bermain!");
+        return false;
+    }
+
+    // Acak target dari data yang ada di memori
+    const randomIndex = Math.floor(Math.random() * activeKeys.length);
+    targetGameQID = activeKeys[randomIndex];
     targetGameData = Records[targetGameQID];
     
-    // 3. Perbarui teks di layar dengan lokasi yang baru
-    // (Sesuaikan ID HTML ini dengan tempat Anda memunculkan nama target)
-    document.getElementById('teks-target-lokasi').textContent = targetGameData.title;
+    // Cegah Error Reference: Amankan koordinat aslinya
+    targetGameKoordinatAsli = null;
+    if (targetGameData.lat && targetGameData.lon) {
+        targetGameKoordinatAsli = [targetGameData.lat, targetGameData.lon];
+    }
+
+    // Munculkan Dialog & Update Teks (Gunakan ID yang sesuai dengan UI Anda)
+    document.getElementById('game-target-name').textContent = targetGameData.title;
+    document.getElementById('game-message').innerHTML = `Temukan marker: <br><strong style="font-size:20px; color:#d9534f;">${targetGameData.title}</strong>`;
+    document.getElementById('game-dialog').classList.remove('d-none');
+    
+    return true; 
 }
 
-document.getElementById('btn-skip-game').addEventListener('click', function(e) {
-    e.preventDefault();
-    e.stopPropagation(); // Mencegah bocor ke panel/peta
+// ==========================================
+// 3. EVENT LISTENER SKIP (Membajak tombol "Lainnya")
+// ==========================================
+const btnMenuInduk = document.getElementById('btn-menu-induk'); // Ini adalah ID tombol "Lainnya" di HTML Anda
 
-    if (isGameMode) {
-        // Beri sedikit notifikasi visual bahwa soal diganti
+btnMenuInduk.addEventListener('click', function(e) {
+    // Cek apakah game sedang aktif
+    if (typeof isGameMode !== 'undefined' && isGameMode === true) {
+        e.preventDefault();
+        e.stopPropagation(); // Mencegah bocor ke panel/peta
+        
+        // Munculkan efek SweetAlert pilihan Anda
         Swal.fire({
             title: 'Soal Dilewati!',
             text: 'Mencari lokasi baru...',
@@ -1578,4 +1599,6 @@ document.getElementById('btn-skip-game').addEventListener('click', function(e) {
             buatSoalBaru();
         });
     }
+    // Jika isGameMode false, kode ini tidak melakukan apa-apa 
+    // sehingga tombol "Lainnya" berjalan normal seperti biasa.
 });

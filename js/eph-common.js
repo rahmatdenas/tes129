@@ -1342,37 +1342,6 @@ const gameTargetName = document.getElementById('game-target-name');
 const gameMessage = document.getElementById('game-message');
 const gameOverlay = document.getElementById('game-overlay');
 
-// ------------------------------------------
-// FUNGSI MEMBUAT SOAL (Dipanggil saat mulai & skip)
-// ------------------------------------------
-function buatSoalBaru() {
-    const activeKeys = Object.keys(Records); 
-    if (activeKeys.length < 3) {
-        alert("Pilih atau filter minimal 3 lokasi di peta terlebih dahulu untuk bermain!");
-        return false;
-    }
-
-    // Acak target dari data yang ada di memori
-    const randomIndex = Math.floor(Math.random() * activeKeys.length);
-    targetGameQID = activeKeys[randomIndex];
-    targetGameData = Records[targetGameQID];
-    
-    // Amankan koordinat aslinya
-    targetGameKoordinatAsli = null;
-    if (targetGameData.lat && targetGameData.lon) {
-        targetGameKoordinatAsli = [targetGameData.lat, targetGameData.lon];
-    }
-
-    // Munculkan Dialog & Update Teks
-    gameTargetName.textContent = targetGameData.title;
-    gameMessage.innerHTML = `Temukan marker: <br><strong style="font-size:20px; color:#d9534f;">${targetGameData.title}</strong>`;
-    gameDialog.classList.remove('d-none');
-const menuDropdown = document.getElementById('submenu-atas');
-    if (menuDropdown) {
-        menuDropdown.classList.add('d-none');
-    }
-    return true; // Berhasil buat soal
-}
 
 // ------------------------------------------
 // 1. TOMBOL MULAI GAME DIKLIK
@@ -1426,39 +1395,6 @@ navBeranda.addEventListener('click', function(e) {
 });
 
 
-// ------------------------------------------
-// 3. TOMBOL LEWATI (Lainnya) DIKLIK
-// ------------------------------------------
-if (btnMenuInduk) {
-    btnMenuInduk.addEventListener('click', function(e) {
-        
-        // --- JIKA SEDANG MAIN GAME (Fungsi Skip) ---
-        if (typeof isGameMode !== 'undefined' && isGameMode === true) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            
-            Swal.fire({
-                title: 'Soal Dilewati!',
-                text: 'Mencari lokasi baru...',
-                icon: 'info',
-                timer: 1200, 
-                showConfirmButton: false,
-                backdrop: false 
-            }).then(() => {
-                buatSoalBaru();
-            });
-            
-            return; // Hentikan agar tidak lanjut ke bawah
-        }
-        
-        // --- JIKA GAME MATI (Fungsi Normal: Buka/Tutup Dropdown) ---
-        // Biarkan sistem bawaan atau toggle manual dropdown-nya di sini
-        if (submenuAtas) {
-            submenuAtas.classList.toggle('d-none');
-        }
-    });
-}
 
 
 // ------------------------------------------
@@ -1482,11 +1418,10 @@ function akhiriGameMode() {
     btnMenuInduk.classList.remove('text-primary');
 
     // 4. BUKA KEMBALI MENU SUBMENU YANG DISEMBUNYIKAN <--- INI KUNCI ERRORNYA
-    const submenuAtas = document.getElementById('submenu-atas');
-    if (submenuAtas) {
-        submenuAtas.classList.remove('d-none');
-    }
-
+const submenuAtas = document.getElementById('submenu-atas');
+if (submenuAtas) {
+    submenuAtas.classList.add('d-none'); // pastikan tertutup, bukan dibuka
+}
     // 5. Buka kembali kunci Panel Mobile
     const panelMobile = document.getElementById('panel'); 
     if (panelMobile) {

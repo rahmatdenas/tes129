@@ -1323,113 +1323,153 @@ window.addEventListener('pageshow', function(e) {
   if (typeof aturTampilanWilayah === 'function') aturTampilanWilayah();
 });
 
-// Global State untuk Game
+// ==========================================
+// GLOBAL STATE UNTUK GAME
+// ==========================================
 let isGameMode = false;
 let targetGameQID = null;
 let targetGameData = null;
+let targetGameKoordinatAsli = null; // <-- Ini tambahan agar tidak Error Reference!
 
 // Referensi DOM
 const btnMulaiGame = document.getElementById('btn-mulai-game');
 const navBeranda = document.getElementById('nav-beranda');
 const navHasil = document.getElementById('nav-hasil-container');
-const navLainnya = document.getElementById('nav-lainnya-container');
+const btnMenuInduk = document.getElementById('btn-menu-induk'); // Tombol teks "Lainnya"
+const navLainnyaContainer = document.getElementById('nav-lainnya-container');
 const gameDialog = document.getElementById('game-dialog');
 const gameTargetName = document.getElementById('game-target-name');
 const gameMessage = document.getElementById('game-message');
 const gameOverlay = document.getElementById('game-overlay');
 
-// 1. Fungsi Memulai Game
-btnMulaiGame.addEventListener('click', function(e) {
-    e.preventDefault();
-	e.stopPropagation();
-    
-    // Asumsi: 'currentFilteredRecords' atau 'Records' berisi objek data aktif saat ini
+// ------------------------------------------
+// FUNGSI MEMBUAT SOAL (Dipanggil saat mulai & skip)
+// ------------------------------------------
+function buatSoalBaru() {
     const activeKeys = Object.keys(Records); 
-    
     if (activeKeys.length < 3) {
         alert("Pilih atau filter minimal 3 lokasi di peta terlebih dahulu untuk bermain!");
-        return;
+        return false;
     }
 
     // Acak target dari data yang ada di memori
     const randomIndex = Math.floor(Math.random() * activeKeys.length);
     targetGameQID = activeKeys[randomIndex];
     targetGameData = Records[targetGameQID];
-	targetGameKoordinatAsli = null;
-if (targetGameData.lat && targetGameData.lon) {
-    targetGameKoordinatAsli = [targetGameData.lat, targetGameData.lon];
+    
+    // Amankan koordinat aslinya
+    targetGameKoordinatAsli = null;
+    if (targetGameData.lat && targetGameData.lon) {
+        targetGameKoordinatAsli = [targetGameData.lat, targetGameData.lon];
+    }
+
+    // Munculkan Dialog & Update Teks
+    gameTargetName.textContent = targetGameData.title;
+    gameMessage.innerHTML = `Temukan marker: <br><strong style="font-size:20px; color:#d9534f;">${targetGameData.title}</strong>`;
+    gameDialog.classList.remove('d-none');
+    
+    return true; // Berhasil buat soal
 }
+
+// ------------------------------------------
+// 1. TOMBOL MULAI GAME DIKLIK
+// ------------------------------------------
+btnMulaiGame.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Coba buat soal pertama, jika gagal (data < 3), hentikan!
+    let bisaMulai = buatSoalBaru();
+    if (!bisaMulai) return; 
 
     // Aktifkan State Game
     isGameMode = true;
 
-	// --- TAMBAHKAN KODE INI UNTUK PANEL MOBILE ---
-    // 1. Tutup panel secara otomatis
+    // --- KUNCI PANEL MOBILE ---
     if (typeof window.setMobilePanelExpanded === 'function') {
-        window.setMobilePanelExpanded(false, false); // (false) berarti menutup panel
+        window.setMobilePanelExpanded(false, false); 
     }
-
-    // 2. Kunci panel agar tidak bisa ditarik/drag
-    // GANTI 'id-panel-mobile' dengan ID elemen panel bawah atau handel Anda (misalnya: 'panel-container' atau 'drag-handle')
-    const panelMobile = document.getElementById('id-panel-mobile'); 
+    const panelMobile = document.getElementById('panel'); // Pakai ID 'panel' yang benar
     if (panelMobile) {
-        panelMobile.style.pointerEvents = 'none'; // Mematikan fungsi drag/sentuh
-        panelMobile.style.opacity = '0.5'; // Opsional: Agak diredupkan agar user tahu panel sedang tidak aktif
+        panelMobile.style.pointerEvents = 'none'; 
+        panelMobile.style.opacity = '0.5'; 
     }
 
-    // Manipulasi Navigasi: Redupkan Hasil & Lainnya
+    // --- MANIPULASI NAVIGASI MENU ---
+    // 1. Matikan Hasil
     navHasil.classList.add('nav-disabled');
-    navLainnya.classList.add('nav-disabled');
-    navBeranda.textContent = "Batal Game"; // Ubah teks beranda jadi tombol batal
+    
+    // 2. Ubah Beranda jadi "Batal"
+    navBeranda.textContent = "Batal Game"; 
     navBeranda.classList.add('text-danger'); 
 
-    // Sembunyikan Submenu Induk
+    // 3. Ubah "Lainnya" jadi "Lewati" (TIDAK di-disable!)
+    btnMenuInduk.textContent = "Lewati ⏭️";
+    btnMenuInduk.classList.add('text-primary');
+
+    // Sembunyikan Submenu Dropdown Induk
     document.getElementById('submenu-atas').classList.add('d-none');
-
-    // Tutup panel handel jika di mobile (Sesuaikan dengan fungsi collapse panel Anda)
-    // tutupPanelIndex(); 
-
-    // Munculkan Dialog
-    gameTargetName.textContent = targetGameData.title; // Ambil dari property title di Records
-    gameMessage.innerHTML = `Temukan marker: <br><strong style="font-size:20px; color:#d9534f;">${targetGameData.title}</strong>`;
-    gameDialog.classList.remove('d-none');
 });
 
-// 2. Fungsi Pembatalan/Keluar Game via Beranda
+
+// ------------------------------------------
+// 2. TOMBOL BATAL (Beranda) DIKLIK
+// ------------------------------------------
 navBeranda.addEventListener('click', function(e) {
     if (isGameMode) {
-        e.preventDefault(); // Cegah fungsi beranda normal sementara
+        e.preventDefault(); 
         akhiriGameMode();
     }
 });
 
-// 3. Fungsi Mengakhiri / Mereset Game
+
+// ------------------------------------------
+// 3. TOMBOL LEWATI (Lainnya) DIKLIK
+// ------------------------------------------
+btnMenuInduk.addEventListener('click', function(e) {
+    // Jika sedang main game, jadikan tombol ini sebagai "Skip"
+    if (typeof isGameMode !== 'undefined' && isGameMode === true) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Buat soal baru
+        buatSoalBaru();
+    }
+    // Jika tidak main game, biarkan fungsi "Lainnya" bawaan berjalan normal
+});
+
+
+// ------------------------------------------
+// 4. FUNGSI MENGAKHIRI / RESET GAME
+// ------------------------------------------
 function akhiriGameMode() {
     isGameMode = false;
     targetGameQID = null;
     targetGameData = null;
+    targetGameKoordinatAsli = null;
 
     // Kembalikan Navigasi
     navHasil.classList.remove('nav-disabled');
-    navLainnya.classList.remove('nav-disabled');
+    
     navBeranda.textContent = "Beranda";
     navBeranda.classList.remove('text-danger');
+    
+    // Kembalikan Teks "Lainnya"
+    btnMenuInduk.textContent = "Lainnya";
+    btnMenuInduk.classList.remove('text-primary');
 
-	// --- TAMBAHKAN KODE INI ---
-    // Buka kunci panel mobile
-    const panelMobile = document.getElementById('id-panel-mobile'); 
+    // Buka kembali kunci Panel Mobile
+    const panelMobile = document.getElementById('panel'); 
     if (panelMobile) {
-        panelMobile.style.pointerEvents = 'auto'; // Mengembalikan fungsi drag/sentuh
-        panelMobile.style.opacity = '1'; // Kembalikan ke tampilan normal
+        panelMobile.style.pointerEvents = 'auto'; 
+        panelMobile.style.opacity = '1'; 
     }
-    // --------------------------
 
     // Bersihkan UI Game
     gameDialog.classList.add('d-none');
     gameOverlay.classList.remove('lock-screen');
     gameOverlay.classList.add('d-none');
     
-    // Kembalikan teks dialog ke default untuk game berikutnya
     document.getElementById('game-title').textContent = "Tantangan Game!";
 }
 
@@ -1505,3 +1545,37 @@ function evaluasiJawabanGame(isBenar, titleDiklik) {
         }, 5000);
     }
 }
+
+// Fungsi khusus untuk melempar soal baru
+function buatSoalBaru() {
+    // 1. Ambil daftar semua Q-ID dari Records
+    let semuaQID = Object.keys(Records);
+    
+    // 2. Acak Q-ID baru (pastikan logic ini sesuai dengan kode Anda sebelumnya)
+    targetGameQID = semuaQID[Math.floor(Math.random() * semuaQID.length)];
+    targetGameData = Records[targetGameQID];
+    
+    // 3. Perbarui teks di layar dengan lokasi yang baru
+    // (Sesuaikan ID HTML ini dengan tempat Anda memunculkan nama target)
+    document.getElementById('teks-target-lokasi').textContent = targetGameData.title;
+}
+
+document.getElementById('btn-skip-game').addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation(); // Mencegah bocor ke panel/peta
+
+    if (isGameMode) {
+        // Beri sedikit notifikasi visual bahwa soal diganti
+        Swal.fire({
+            title: 'Soal Dilewati!',
+            text: 'Mencari lokasi baru...',
+            icon: 'info',
+            timer: 1200, // Notifikasi kilat
+            showConfirmButton: false,
+            backdrop: false // Agar layar tidak gelap sepenuhnya
+        }).then(() => {
+            // Panggil fungsi acak soal setelah notifikasi selesai
+            buatSoalBaru();
+        });
+    }
+});

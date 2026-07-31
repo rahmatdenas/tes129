@@ -752,7 +752,17 @@ function populateMapAndIndex() {
         this._bukaSaatDisentuh = this.isPopupOpen();
       });
 
-      mapMarker.on('click', function() {
+mapMarker.on('click', function(e) {
+        
+        // ==== BLOK GAME MODE ====
+        if (typeof isGameMode !== 'undefined' && isGameMode === true) {
+            let isBenar = (qid === targetGameQID);
+            evaluasiJawabanGame(isBenar, record.title);
+            return; // Hentikan fungsi klik normal
+        }
+        // ========================
+
+        // --- KODE BAWAAN APLIKASI ANDA ---
         if (this._bukaSaatDisentuh) {
           if (typeof window.setMobilePanelExpanded === 'function') {
             window.setMobilePanelExpanded(true, true);

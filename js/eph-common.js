@@ -1338,7 +1338,6 @@ const navHasil = document.getElementById('nav-hasil-container');
 const btnMenuInduk = document.getElementById('btn-menu-induk'); // Tombol teks "Lainnya"
 const navLainnyaContainer = document.getElementById('nav-lainnya-container');
 const gameDialog = document.getElementById('game-dialog');
-const gameTargetName = document.getElementById('game-target-name');
 const gameMessage = document.getElementById('game-message');
 const gameOverlay = document.getElementById('game-overlay');
 
@@ -1538,11 +1537,15 @@ function buatSoalBaru() {
     if (targetGameData.lat && targetGameData.lon) {
         targetGameKoordinatAsli = [targetGameData.lat, targetGameData.lon];
     }
+document.getElementById('game-title').textContent = 'Tantangan Game!';
 
-    // Munculkan Dialog & Update Teks (Gunakan ID yang sesuai dengan UI Anda)
-    document.getElementById('game-target-name').textContent = targetGameData.title;
-    document.getElementById('game-message').innerHTML = `Temukan marker: <br><strong style="font-size:20px; color:#d9534f;">${targetGameData.title}</strong>`;
-    document.getElementById('game-dialog').classList.remove('d-none');
+document.getElementById('game-message').innerHTML =
+    `Temukan marker:<br>
+    <strong style="font-size:20px; color:#d9534f;">
+        ${targetGameData.title}
+    </strong>`;
+
+document.getElementById('game-dialog').classList.remove('d-none');
     
     return true; 
 }
